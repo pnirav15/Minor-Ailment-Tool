@@ -1,0 +1,111 @@
+import React, { useState } from 'react';
+
+const UtiIntakeForm = () => {
+  const [step, setStep] = useState(0);
+  const [formData, setFormData] = useState({});
+  const [status, setStatus] = useState('active'); // 'active', 'referral', 'complete'
+  const [referralReason, setReferralReason] = useState('');
+
+  // Define the questions and logic
+  const questions = [
+    {
+      id: 'gender',
+      text: 'What is your biological sex?',
+      options: ['Female', 'Male'],
+      logic: (answer) => {
+        if (answer === 'Male') return { stop: true, reason: 'Ontario pharmacists can currently only prescribe for UTIs in females. Please see a physician.' };
+        return { stop: false };
+      }
+    },
+    {
+      id: 'age',
+      text: 'Are you 12 years of age or older?',
+      options: ['Yes', 'No'],
+      logic: (answer) => {
+        if (answer === 'No') return { stop: true, reason: 'Patients under 12 require a physician assessment for UTIs.' };
+        return { stop: false };
+      }
+    },
+    {
+      id: 'red_flags',
+      text: 'Do you have fever, chills, or back/flank pain?',
+      options: ['Yes', 'No'],
+      logic: (answer) => {
+        if (answer === 'Yes') return { stop: true, reason: 'These symptoms suggest a more serious kidney infection (Pyelonephritis). Please go to ER or Urgent Care.' };
+        return { stop: false };
+      }
+    },
+    {
+      id: 'pregnancy',
+      text: 'Is there a chance you are pregnant?',
+      options: ['Yes', 'No'],
+      logic: (answer) => {
+        if (answer === 'Yes') return { stop: true, reason: 'UTIs during pregnancy require physician monitoring.' };
+        return { stop: false };
+      }
+    }
+  ];
+
+  const handleAnswer = (answer) => {
+    const currentQuestion = questions[step];
+    
+    // Save the answer
+    setFormData({ ...formData, [currentQuestion.id]: answer });
+
+    // Check Logic
+    const result = currentQuestion.logic(answer);
+
+    if (result.stop) {
+      setStatus('referral');
+      setReferralReason(result.reason);
+    } else {
+      if (step < questions.length - 1) {
+        setStep(step + 1);
+      } else {
+        setStatus('complete');
+      }
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-md space-y-4">
+      <h2 className="text-xl font-bold text-gray-900">Ontario Minor Ailment Check: UTI</h2>
+      
+      {status === 'active' && (
+        <div>
+          <p className="text-lg mb-4">{questions[step].text}</p>
+          <div className="flex gap-4">
+            {questions[step].options.map((option) => (
+              <button
+                key={option}
+                onClick={() => handleAnswer(option)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <p className="text-sm text-gray-500 mt-4">Question {step + 1} of {questions.length}</p>
+        </div>
+      )}
+
+      {status === 'referral' && (
+        <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+          <h3 className="font-bold">Referral Needed</h3>
+          <p>{referralReason}</p>
+          <button onClick={() => window.location.reload()} className="mt-4 text-sm underline">Start Over</button>
+        </div>
+      )}
+
+      {status === 'complete' && (
+        <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-700">
+          <h3 className="font-bold">Assessment Complete</h3>
+          <p>You meet the criteria for a Pharmacist Assessment.</p>
+          <p className="mt-2 text-sm">Summary generated for Pharmacist...</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default UtiIntakeForm;
